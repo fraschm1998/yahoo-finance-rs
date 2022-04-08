@@ -66,9 +66,10 @@ pub async fn scrape<'a>(symbol: &'a str) -> Result<Stores> {
 
    let line = Cursor::new(response.text().await.context(error::UnexpectedErrorRead { url: url.clone().to_string() })?)
       .lines()
-      .map(|line| line.unwrap())
+      .map(|line| line.unwrap()).find(|line| line.trim().starts_with(DATA_VAR))
+    /*  .map(|line| line.unwrap())
       .filter(|line| line.trim().starts_with(DATA_VAR))
-      .next()
+      .next() */
       .context(error::MissingData { reason: "no quote data" })?;
    
    let data = line
