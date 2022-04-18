@@ -18,13 +18,14 @@ A Rust library for getting financial information from [Yahoo!](https://finance.y
 ```rust
 use yahoo_finance::history;
 
-fn main() {
+#[tokio::main]
+async fn main() {
    // retrieve 6 months worth of data for Apple
-   let data = history::retrieve("AAPL").unwrap();
+   let data = history::retrieve("AAPL").await.unwrap();
 
    // print the date and closing price for each day we have data
    for bar in &data {
-      println!("On {} Apple closed at ${:.2}", bar.timestamp.format("%b %e %Y"), bar.close)
+      println!("On {} Apple closed at ${:.2}", bar.bar.timestamp.format("%b %e %Y"), bar.bar.close)
    }
 }
 ```

@@ -7,7 +7,7 @@ use std::env;
 
 use crate::{error, Interval, Result};
 
-const BASE_URL: &'static str = "https://query1.finance.yahoo.com/v8/finance/chart/";
+const BASE_URL: &str = "https://query1.finance.yahoo.com/v8/finance/chart/";
 
 /// Helper function to build up the main query URL
 fn build_query(symbol: &str) -> Result<Url> {
@@ -46,18 +46,7 @@ ez_serde!(OHLCV {
    volumes: Vec<Option<u64>>
 });
 
-ez_serde!(AdjustedClose {
-    #[serde(rename = "adjclose", default)]
-    adjusted_closes: Vec<Option<f64>>
-});
-
-ez_serde!(Indicators {
-    #[serde(rename = "quote", default)]
-    quotes: Vec<OHLCV>,
-
-    #[serde(rename = "adjclose", default)]
-    adjusted_closes: Vec<AdjustedClose>
-});
+ez_serde!(Indicators { #[serde(rename = "quote", default)] quotes: Vec<OHLCV> });
 
 ez_serde!(Data {
    meta: Meta,

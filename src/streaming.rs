@@ -106,7 +106,7 @@ impl Streamer {
                     }
                     Err(e) => return future::ready(Some(Err(InnerError::SocketError{ source: e })))
                 };
-                return future::ready(None);
+                future::ready(None)
             })
             .map(move |msg| {
                 let data: PricingData = protobuf::Message::parse_from_bytes(&decode(&msg?).unwrap().as_bytes()).unwrap();

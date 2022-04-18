@@ -1,5 +1,5 @@
 use crate::Interval;
-use reqwest;
+//use reqwest;
 use snafu::Snafu;
 
 /// All possible errors that can occur when using yahoo finance

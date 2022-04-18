@@ -6,9 +6,9 @@ use std::io::{ BufRead, Cursor };
 
 use crate::{ error, Result };
 
-const DATA_VAR: &'static str = "root.App.main";
+const DATA_VAR: &str = "root.App.main";
 
-const BASE_URL: &'static str = "https://finance.yahoo.com";
+const BASE_URL: &str = "https://finance.yahoo.com";
 
 ez_serde!(QuoteType {
    #[serde(rename = "longName")] name: String,
