@@ -1,10 +1,10 @@
+use crate::error::InnerError;
 use base64::decode;
 use futures::{future, SinkExt, Stream, StreamExt};
 use serde::Serialize;
 use std::sync::{mpsc, Arc, Mutex};
 use std::time::Duration;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use crate::error::InnerError;
 
 use crate::yahoo::{PricingData, PricingData_MarketHoursType};
 use crate::TradingSession;
@@ -52,7 +52,8 @@ impl Streamer {
         let (tx, rx) = mpsc::channel();
 
         let (stream, _) = connect_async("wss://streamer.finance.yahoo.com")
-            .await.unwrap();
+            .await
+            .unwrap();
         let (mut sink, source) = stream.split();
 
         // send the symbols we are interested in streaming
@@ -86,39 +87,45 @@ impl Streamer {
         source
             .filter_map(move |msg| {
                 match msg {
-                    Ok(ok_msg) => {
-                        match ok_msg {
-                            Message::Ping(_) => match pong_tx.send(Message::Pong("pong".as_bytes().to_vec())) {
+                    Ok(ok_msg) => match ok_msg {
+                        Message::Ping(_) => {
+                            match pong_tx.send(Message::Pong("pong".as_bytes().to_vec())) {
                                 Ok(_) => {}
-                                Err(e) => return future::ready(Some(Err(InnerError::SendError{ source: e } )))
+                                Err(e) => {
+                                    return future::ready(Some(Err(InnerError::SendError {
+                                        source: e,
+                                    })))
+                                }
                             }
-                            Message::Close(_) => {
-                                *(shutdown.lock().unwrap()) = true;
-                            }
-                            Message::Text(value) => {
-                                return future::ready(Some(Ok(value)));
-                            }
-                            Message::Binary(value) => {
-                                return future::ready(Some(Ok(String::from_utf8(value).unwrap())));
-                            }
-                            _ => {}
                         }
+                        Message::Close(_) => {
+                            *(shutdown.lock().unwrap()) = true;
+                        }
+                        Message::Text(value) => {
+                            return future::ready(Some(Ok(value)));
+                        }
+                        Message::Binary(value) => {
+                            return future::ready(Some(Ok(String::from_utf8(value).unwrap())));
+                        }
+                        _ => {}
+                    },
+                    Err(e) => {
+                        return future::ready(Some(Err(InnerError::SocketError { source: e })))
                     }
-                    Err(e) => return future::ready(Some(Err(InnerError::SocketError{ source: e })))
                 };
                 future::ready(None)
             })
             .map(move |msg| {
-                let data: PricingData = protobuf::Message::parse_from_bytes(&decode(&msg?).unwrap().as_bytes()).unwrap();
-                Ok(
-                    Quote {
-                        symbol: data.id.to_string(),
-                        timestamp: data.time as i64,
-                        session: convert_session(data.marketHours),
-                        price: data.price as f64,
-                        volume: data.dayVolume as u64,
-                    }
-                )
+                let data: PricingData =
+                    protobuf::Message::parse_from_bytes(&decode(&msg?).unwrap().as_bytes())
+                        .unwrap();
+                Ok(Quote {
+                    symbol: data.id.to_string(),
+                    timestamp: data.time as i64,
+                    session: convert_session(data.marketHours),
+                    price: data.price as f64,
+                    volume: data.dayVolume as u64,
+                })
             })
     }
 
